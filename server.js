@@ -7,17 +7,24 @@ const socketIo = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
-const port = 3000;
+const port = process.env.PORT || 3000; 
+// ...
 app.use(express.json());
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 app.post('/run', (req, res) => {
+  const cppFile = 'overloading_1a.cpp';
+  const exeFile = 'exeCode'; // Linux doesn't need .exe
+  
+  // LINUX COMMANDS
+  const command = `g++ ${cppFile} -o ${exeFile} && ./${exeFile}`;
+  const deleteCommand = `rm ${exeFile}`;
   const userInputRaw = typeof req.body.input === 'string' ? req.body.input : '';
   const userInput = userInputRaw.endsWith('\n') ? userInputRaw : userInputRaw + '\n';
-  const cppFile = path.join(__dirname, 'overloading_1a.cpp');
-  const exeFile = path.join(__dirname, 'exeCode.exe');
-  const compileCmd = `g++ "${cppFile}" -o "${exeFile}"`;
+  // const cppFile = path.join(__dirname, 'overloading_1a.cpp');
+  // const exeFile = path.join(__dirname, 'exeCode.exe');
+  // const compileCmd = `g++ "${cppFile}" -o "${exeFile}"`;
   function cleanupExe() {
     fs.unlink(exeFile, (err) => {
       if (err) {
@@ -140,7 +147,11 @@ io.on('connection', (socket) => {
     console.log('Client disconnected:', socket.id);
   });
 });
-server.listen(port, () => {
-  console.log(`Server listening at http://localhost:${port}`);
-  console.log('Make sure g++ is in your system PATH');
+// server.listen(port, () => {
+//   console.log(`Server listening at http://localhost:${port}`);
+//   console.log('Make sure g++ is in your system PATH');
+// });
+// VITAL CHANGE: Listen on '0.0.0.0'
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server listening on port ${port}`);
 });
