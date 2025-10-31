@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Interactive C++ Terminal</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 { color: #4ec9b0; }
+    button {
+      font-size: 16px;
+      padding: 10px 20px;
+      background: #0e639c;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 10px 0 15px;
+    }
+    button:hover { background: #1177bb; }
+    button:disabled { background: #555; cursor: not-allowed; }
+
+    /* Console textarea styles */
+    #console {
+      width: 100%;
+      box-sizing: border-box;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 14px;
+      background: #0c0c0c;
+      color: #cccccc;
+      border: 2px solid #333;
+      border-radius: 4px;
+      padding: 12px;
+      line-height: 1.4;
+      resize: vertical;
+      min-height: 420px;
+      max-height: 70vh;
+      white-space: pre-wrap;
+      overflow: auto;
+    }
+    #console:focus {
+      outline: none;
+      border-color: #0e639c;
+      box-shadow: 0 0 0 2px rgba(14, 99, 156, 0.25);
+    }
+
+    .info { color: #888; font-size: 14px; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Interactive C++ Terminal</h1>
+  <p class="info">Single-console mode: type at the bottom, press Enter to send (like CMD)</p>
+
+  <button id="runButton">▶ Run C++ Code</button>
+
+  <textarea id="console" rows="20" spellcheck="false">Click "Run C++ Code" to start...</textarea>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const runButton = document.getElementById('runButton');
+    const consoleEl = document.getElementById('console');
+
+    let isRunning = false;
+    // All text before lockIndex is read-only output. User types only after lockIndex.
+    let lockIndex = 0;
+
+    function setConsole(text) {
+      consoleEl.value = text;
+      scrollToBottom();
+    }
+
+    function appendToConsole(text) {
+      const atEnd = isCaretAtEnd();
+      consoleEl.value += text;
+      // Advance lock to the new end for output
+      lockIndex = consoleEl.value.length;
+      if (atEnd) moveCaretToEnd();
+      scrollToBottom();
+    }
+
+    function scrollToBottom() {
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    function moveCaretToEnd() {
+      consoleEl.selectionStart = consoleEl.selectionEnd = consoleEl.value.length;
+    }
+
+    function isCaretAtEnd() {
+      return consoleEl.selectionStart === consoleEl.value.length && consoleEl.selectionEnd === consoleEl.value.length;
+    }
+
+    function getUserInput() {
+      return consoleEl.value.slice(lockIndex);
+    }
+
+    function setUserInput(text) {
+      consoleEl.value = consoleEl.value.slice(0, lockIndex) + text;
+      moveCaretToEnd();
+    }
+
+    runButton.addEventListener('click', () => {
+      if (isRunning) return;
+      
+      isRunning = true;
+      runButton.disabled = true;
+      runButton.textContent = '⏳ Running...';
+      setConsole('');
+      lockIndex = 0;
+      consoleEl.focus();
+
+      socket.emit('run-interactive');
+    });
+
+    socket.on('output', (data) => {
+      appendToConsole(data);
+    });
+
+    socket.on('done', () => {
+      isRunning = false;
+      runButton.disabled = false;
+      runButton.textContent = '▶ Run C++ Code';
+      appendToConsole('\n');
+    });
+
+    // Key handling to emulate terminal behavior within a single textarea
+    consoleEl.addEventListener('keydown', (e) => {
+      if (!isRunning) return;
+
+      const start = consoleEl.selectionStart;
+      const end = consoleEl.selectionEnd;
+
+      // Prevent moving caret into the read-only region with Home/PageUp
+      if (e.key === 'Home' || e.key === 'PageUp') {
+        e.preventDefault();
+        consoleEl.selectionStart = consoleEl.selectionEnd = lockIndex;
+        return;
+      }
+
+      // Keep caret from going before lockIndex with ArrowLeft/Up
+      if ((e.key === 'ArrowLeft' || e.key === 'ArrowUp') && start <= lockIndex) {
+        e.preventDefault();
+        consoleEl.selectionStart = consoleEl.selectionEnd = lockIndex;
+        return;
+      }
+
+      // Block Backspace if at the boundary or selection starts in read-only area
+      if (e.key === 'Backspace' && (start <= lockIndex)) {
+        e.preventDefault();
+        return;
+      }
+
+      // Block Delete if it would delete from read-only area
+      if (e.key === 'Delete' && start < lockIndex) {
+        e.preventDefault();
+        return;
+      }
+
+      // Submit on Enter: send only the editable tail
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const input = getUserInput();
+        // Don't duplicate what the user already typed; just finalize the line
+        socket.emit('input', input);
+        appendToConsole('\n');
+        // After sending, move lock to the new end so next input starts fresh
+        lockIndex = consoleEl.value.length;
+      }
+    });
+
+    // Ensure pastes only affect the editable area
+    consoleEl.addEventListener('paste', (e) => {
+      if (!isRunning) return;
+      const start = consoleEl.selectionStart;
+      if (start < lockIndex) {
+        e.preventDefault();
+        const text = (e.clipboardData || window.clipboardData).getData('text');
+        setUserInput(getUserInput() + text);
+      }
+    });
+
+    // Keep caret in editable region when clicking
+    consoleEl.addEventListener('click', () => {
+      if (!isRunning) return;
+      if (consoleEl.selectionStart < lockIndex) {
+        consoleEl.selectionStart = consoleEl.selectionEnd = consoleEl.value.length;
+      }
+    });
+  </script>
+</body>
+</html>
