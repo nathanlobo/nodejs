@@ -4,64 +4,155 @@
   <meta charset="UTF-8">
   <title>Interactive C++ Terminal</title>
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-      background: #1e1e1e;
-      color: #d4d4d4;
-      max-width: 900px;
-      margin: 0 auto;
+    /* Base layout and responsive sizing */
+    :root {
+      --bg: #1e1e1e;
+      --panel: #0c0c0c;
+      --text: #d4d4d4;
+      --muted: #888;
+      --accent: #0e639c;
+      --button-padding: 10px 20px;
+      --radius: 8px;
     }
-    h1 { color: #4ec9b0; }
+
+    html,body{height:100%;}
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--text);
+      max-width: 1000px;
+      margin: 0 auto;
+      box-sizing: border-box;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    /* Buttons (mobile-friendly) - enlarged */
     button {
-      font-size: 16px;
-      padding: 10px 20px;
-      background: #0e639c;
+      font-size: 20px;
+      padding: 18px 32px;
+      background: var(--accent);
       color: white;
       border: none;
-      border-radius: 4px;
+      border-radius: 16px;
       cursor: pointer;
-      margin: 10px 0 15px;
+      margin: 10px 6px 10px 0;
+      min-height: 56px;
+      min-width: 180px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
     }
-    button:hover { background: #1177bb; }
-    button:disabled { background: #555; cursor: not-allowed; }
+    button:hover { background: #0c8fd0; transform: translateY(-2px); box-shadow: 0 12px 34px rgba(0,0,0,0.2); }
+    button:active { transform: translateY(0); }
+    button:disabled { background: #555; cursor: not-allowed; box-shadow: none; }
+
+    /* Specific visual tweak for the screenshot button which is injected dynamically */
+    #screenshotBtn {
+      font-size: 20px;
+      padding: 18px 26px;
+      min-width: 180px;
+      margin-left: 12px;
+      display: inline-block;
+      background: #147bbf;
+    }
+
+    /* Make the Run button visually distinct and prominent */
+    #runButton {
+      background: #0bb07a; /* green accent for Run */
+      color: white;
+      font-weight: 700;
+      padding-left: 28px;
+      padding-right: 28px;
+      box-shadow: 0 12px 38px rgba(11,176,122,0.12);
+    }
+    #runButton:hover { background: #0aa56e; }
 
     /* Console textarea styles */
     #console {
       width: 100%;
       box-sizing: border-box;
-      font-family: 'Consolas', 'Courier New', monospace;
-      font-size: 14px;
-      background: #0c0c0c;
-      color: #cccccc;
-      border: 2px solid #333;
-      border-radius: 4px;
-      padding: 12px;
-      line-height: 1.4;
+      font-family: 'Courier New', monospace;
+      font-size: 15px;
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid #2b2b2b;
+      border-radius: 10px;
+      padding: 14px;
+      line-height: 1.7;
       resize: vertical;
+      /* Use viewport height so console is prominent on mobile */
       min-height: 420px;
-      max-height: 70vh;
+      max-height: 80vh;
+      height: auto;
       white-space: pre-wrap;
       overflow: auto;
+      word-break: break-word;
     }
     #console:focus {
       outline: none;
-      border-color: #0e639c;
-      box-shadow: 0 0 0 2px rgba(14, 99, 156, 0.25);
+      border-color: var(--accent);
+      box-shadow: 0 4px 18px rgba(14,99,156,0.12);
     }
 
-    .info { color: #888; font-size: 14px; margin-bottom: 10px; }
+    .info {
+      color: var(--muted);
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      word-break: break-word;
+    }
+
+    /* Not-found message styling if shown in-page */
+    .not-found {
+      display: block;
+      color: #ff6b6b;
+      font-size: 20px;
+      font-weight: 800;
+      text-align: center;
+      padding: 18px;
+      border: 1px solid rgba(255,107,107,0.15);
+      background: rgba(255,107,107,0.03);
+      border-radius: 8px;
+      margin: 12px 0;
+    }
+
+    /* Layout helpers */
+    .top-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+
+    /* Responsive adjustments */
+    @media (max-width: 640px) {
+      /* Mobile-first adjustments: make console large and easy to read/scroll */
+      body { padding: 10px; }
+      .info { font-size: 16px; }
+  /* Make control buttons full-width and larger for touch */
+  button { width: 100%; font-size: 20px; padding: 18px; min-width: auto; }
+  #screenshotBtn { margin-left: 0 !important; margin-top: 10px; display: block; }
+  /* Make run button more prominent on mobile */
+  #runButton { min-height: 64px; border-radius: 14px; }
+      /* Make console take the majority of the viewport height on phones */
+      #console {
+        font-size: 16px;
+        min-height: 60vh;
+        max-height: 75vh;
+        line-height: 1.9;
+        padding: 16px;
+        border-radius: 12px;
+      }
+    }
+
+    @media (min-width: 641px) and (max-width: 900px) {
+      #console { min-height: 360px; }
+      button { padding: 10px 16px; }
+    }
   </style>
 </head>
 <body>
-  <h1>Interactive C++ Terminal</h1>
-  <p class="info">Single-console mode: type at the bottom, press Enter to send (like CMD)</p>
-
+  <div id="selectedInfo" class="info"><span id="selectedId">-</span> - <span id="selectedPath">(unknown)</span></div>
   <button id="runButton">▶ Run C++ Code</button>
-
   <textarea id="console" rows="20" spellcheck="false">Click "Run C++ Code" to start...</textarea>
 
   <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script>
     const socket = io();
     const runButton = document.getElementById('runButton');
@@ -109,8 +200,23 @@
     // Helper to get `id` from URL query string (e.g. ?id=2)
     function getIdFromQuery() {
       try {
+        // Prefer explicit ?id=... query param
         const params = new URLSearchParams(window.location.search);
-        return params.get('id') || null;
+        const idParam = params.get('id');
+        if (idParam) return idParam;
+        // Support shorthand query like `/?1a` (no `id=` key): use first key if present
+        for (const key of params.keys()) {
+          if (key) return key;
+        }
+        // If no query param, support path-style URL like /1a by reading pathname
+        const path = window.location.pathname || '/';
+        if (path && path.length > 1) {
+          // strip leading slash and any trailing slashes
+          const trimmed = path.replace(/^\/+|\/+$/g, '');
+          // only accept short single-segment ids (no slashes left)
+          if (!trimmed.includes('/')) return trimmed;
+        }
+        return null;
       } catch (e) {
         return null;
       }
@@ -132,6 +238,45 @@
       else socket.emit('run-interactive');
     });
 
+    // Display mapping info in the UI
+    const selectedIdEl = document.getElementById('selectedId');
+    const selectedPathEl = document.getElementById('selectedPath');
+    function showMappingForId(id) {
+      if (!id) {
+        selectedIdEl.textContent = '-';
+        selectedPathEl.textContent = '(unknown)';
+        return Promise.resolve(null);
+      }
+      selectedIdEl.textContent = id;
+      return fetch(`/mapping?id=${encodeURIComponent(id)}`)
+        .then(r => r.json())
+        .then(j => {
+          if (j && j.path) {
+            selectedPathEl.textContent = j.path;
+            // store filePath for analytics
+            localStorage.setItem('filePath', j.path);
+          } else {
+            selectedPathEl.textContent = '(local filename)';
+          }
+          return j;
+        })
+        .catch(() => { selectedPathEl.textContent = '(error)'; return null; });
+    }
+
+    // Show mapping at load and whenever the URL changes (back/forward)
+    const initialId = getIdFromQuery();
+    // Auto-start run flag
+    let autoRun = false;
+    // showMappingForId returns a promise; when mapping is available, auto-run
+    showMappingForId(initialId).then((j) => {
+      if (j && j.path && initialId) {
+        // small delay to allow socket to connect
+        autoRun = true;
+        setTimeout(() => runButton.click(), 250);
+      }
+    });
+    window.addEventListener('popstate', () => showMappingForId(getIdFromQuery()));
+
     socket.on('output', (data) => {
       appendToConsole(data);
     });
@@ -141,7 +286,92 @@
       runButton.disabled = false;
       runButton.textContent = '▶ Run C++ Code';
       appendToConsole('\n');
+      // If this was an auto-run and the output indicates failure, show friendly message
+      if (autoRun) {
+        const txt = consoleEl.value || '';
+        const compileFail = txt.includes('Compilation failed');
+        const procError = txt.includes('Process error') || txt.includes('[Process was killed') || /\[Process exited with code (\d+)\]/.test(txt) && !/\[Process exited with code 0\]/.test(txt);
+        if (compileFail || procError) {
+          appendToConsole('\nAn error occured: Refresh or press Run C++ code.\n');
+        }
+        autoRun = false;
+      }
     });
+
+    // Analytics sending function (Google Apps Script endpoint)
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwgXbi_LPG8TjWaOjeT2cPUWeoBRJ3U0DSrJTy3ikAn0hdXJ7nSXedTx_mu3xbHQLLm/exec';
+    function sendAnalyticsData(name, visitType, visitPage) {
+      try {
+        const url = `${GOOGLE_SCRIPT_URL}?userName=${encodeURIComponent(name)}&visitType=${encodeURIComponent(visitType)}&visitPage=${encodeURIComponent(visitPage)}`;
+        fetch(url, { method: 'POST', mode: 'no-cors' }).catch(() => {});
+      } catch (e) { /* ignore */ }
+    }
+
+    // Screenshot button: capture the console textarea and download PNG
+    (function setupScreenshot(){
+      const screenshotBtn = document.createElement('button');
+      screenshotBtn.id = 'screenshotBtn';
+      screenshotBtn.textContent = '📸 Screenshot';
+      screenshotBtn.style.marginLeft = '8px';
+      runButton.insertAdjacentElement('afterend', screenshotBtn);
+
+      screenshotBtn.addEventListener('click', async () => {
+        try {
+          screenshotBtn.textContent = '⏳ Generating...';
+          screenshotBtn.disabled = true;
+
+          // Create a temporary div that mirrors the textarea rendering so
+          // html2canvas captures wrapped lines and full content correctly.
+          const text = consoleEl.value || '';
+          const cs = window.getComputedStyle(consoleEl);
+          const temp = document.createElement('div');
+          temp.style.whiteSpace = 'pre-wrap';
+          temp.style.fontFamily = cs.fontFamily;
+          temp.style.fontSize = cs.fontSize;
+          temp.style.lineHeight = cs.lineHeight;
+          temp.style.color = cs.color;
+          temp.style.background = cs.backgroundColor || '#0c0c0c';
+          temp.style.padding = cs.padding;
+          temp.style.borderRadius = cs.borderRadius || '6px';
+          temp.style.boxSizing = 'border-box';
+          // Match the width of the visible textarea so wrapping behaves the same
+          temp.style.width = (consoleEl.clientWidth) + 'px';
+          temp.style.maxWidth = temp.style.width;
+          // Place offscreen but in the DOM so html2canvas can render it
+          temp.style.position = 'fixed';
+          temp.style.left = '-99999px';
+          temp.style.top = '0';
+          temp.textContent = text;
+          document.body.appendChild(temp);
+
+          const canvas = await html2canvas(temp, { backgroundColor: null, useCORS: true, scale: 2 });
+          // remove the temporary element
+          temp.remove();
+
+          canvas.toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'console-screenshot.png';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            screenshotBtn.textContent = '✅ Downloaded';
+            setTimeout(() => { screenshotBtn.textContent = '📸 Screenshot'; screenshotBtn.disabled = false; }, 2000);
+          });
+
+          // Analytics for screenshot
+          const storedName = localStorage.getItem('userName');
+          const filePath = localStorage.getItem('filePath');
+          if (storedName && filePath) sendAnalyticsData(storedName, 'Screenshot Downloaded', filePath);
+        } catch (e) {
+          console.error('Screenshot failed', e);
+          screenshotBtn.textContent = '❌ Failed';
+          setTimeout(() => { screenshotBtn.textContent = '📸 Screenshot'; screenshotBtn.disabled = false; }, 2000);
+        }
+      });
+    })();
 
     // Key handling to emulate terminal behavior within a single textarea
     consoleEl.addEventListener('keydown', (e) => {
