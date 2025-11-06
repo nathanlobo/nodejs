@@ -16,7 +16,8 @@ const io = socketIo(server, {
       'http://localhost:3001',
       'http://127.0.0.1:3001',
       'https://zpfgm1ft-5500.inc1.devtunnels.ms/',
-      'https://zpfgm1ft-3000.inc1.devtunnels.ms/'
+      'https://zpfgm1ft-3000.inc1.devtunnels.ms/',
+      'https://cpp-zkxv.onrender.com/'
     ],
     methods: ['GET', 'POST'],
     credentials: true
