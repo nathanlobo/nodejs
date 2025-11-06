@@ -8,98 +8,107 @@
     :root {
       --bg: #1e1e1e;
       --panel: #0c0c0c;
-      --text: #d4d4d4;
-      --muted: #888;
+      --text: #e8e8e8;
+      --muted: #a0a0a0;
       --accent: #0e639c;
       --button-padding: 10px 20px;
       --radius: 8px;
     }
 
-    html,body{height:100%;}
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,body{height:100%; margin: 0; padding: 0;}
     body {
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-      padding: 16px;
+      padding: 12px;
       background: var(--bg);
       color: var(--text);
       max-width: 1000px;
       margin: 0 auto;
-      box-sizing: border-box;
       -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     /* Buttons (mobile-friendly) - enlarged */
     button {
-      font-size: 20px;
-      padding: 18px 32px;
+      font-size: 18px;
+      font-weight: 600;
+      padding: 16px 28px;
       background: var(--accent);
-      color: white;
+      color: #ffffff;
       border: none;
-      border-radius: 16px;
+      border-radius: 12px;
       cursor: pointer;
-      margin: 10px 6px 10px 0;
-      min-height: 56px;
-      min-width: 180px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
-      transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+      margin: 8px 6px 8px 0;
+      min-height: 54px;
+      min-width: 160px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+      transition: all 150ms ease;
+      touch-action: manipulation;
+      user-select: none;
     }
-    button:hover { background: #0c8fd0; transform: translateY(-2px); box-shadow: 0 12px 34px rgba(0,0,0,0.2); }
-    button:active { transform: translateY(0); }
-    button:disabled { background: #555; cursor: not-allowed; box-shadow: none; }
+    button:hover { background: #1177bb; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+    button:active { transform: translateY(0); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    button:disabled { background: #444; color: #888; cursor: not-allowed; box-shadow: none; opacity: 0.6; }
 
     /* Specific visual tweak for the screenshot button which is injected dynamically */
     #screenshotBtn {
-      font-size: 20px;
-      padding: 18px 26px;
-      min-width: 180px;
-      margin-left: 12px;
+      font-size: 18px;
+      padding: 16px 24px;
+      min-width: 160px;
+      margin-left: 8px;
       display: inline-block;
-      background: #147bbf;
+      background: #1a7fbf;
     }
+    #screenshotBtn:hover { background: #1a8fcf; }
 
     /* Make the Run button visually distinct and prominent */
     #runButton {
-      background: #161d80; /* green accent for Run */
-      color: white;
+      background: #2563eb;
+      color: #ffffff;
       font-weight: 700;
-      padding-left: 28px;
-      padding-right: 28px;
-      box-shadow: 0 12px 38px rgba(11,176,122,0.12);
+      padding: 16px 32px;
+      box-shadow: 0 6px 24px rgba(37,99,235,0.3);
     }
-    #runButton:hover { background: #0aa56e; }
+    #runButton:hover { background: #1d4ed8; box-shadow: 0 8px 28px rgba(37,99,235,0.4); }
+    #runButton:disabled { background: #444; box-shadow: none; }
 
     /* Console textarea styles */
     #console {
       width: 100%;
-      box-sizing: border-box;
-      font-family: 'Courier New', monospace;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
       font-size: 15px;
       background: var(--panel);
-      color: var(--text);
-      border: 1px solid #2b2b2b;
+      color: #f0f0f0;
+      border: 2px solid #333;
       border-radius: 10px;
-      padding: 14px;
-      line-height: 1.7;
+      padding: 16px;
+      line-height: 1.6;
       resize: vertical;
-      /* Use viewport height so console is prominent on mobile */
-      min-height: 420px;
-      max-height: 80vh;
+      min-height: 400px;
+      max-height: 75vh;
       height: auto;
       white-space: pre-wrap;
       overflow: auto;
       word-break: break-word;
+      -webkit-overflow-scrolling: touch;
     }
     #console:focus {
       outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 4px 18px rgba(14,99,156,0.12);
+      border-color: #0e639c;
+      box-shadow: 0 0 0 3px rgba(14,99,156,0.15);
     }
 
     .info {
       color: var(--muted);
-      font-size: 18px;
-      font-weight: 700;
-      margin-bottom: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
       word-break: break-word;
+      line-height: 1.4;
     }
 
     /* Not-found message styling if shown in-page */
@@ -119,30 +128,84 @@
     /* Layout helpers */
     .top-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 
-    /* Responsive adjustments */
+    /* Responsive adjustments for mobile phones */
     @media (max-width: 640px) {
-      /* Mobile-first adjustments: make console large and easy to read/scroll */
-      body { padding: 10px; }
-      .info { font-size: 16px; }
-  /* Make control buttons full-width and larger for touch */
-  button { width: 100%; font-size: 20px; padding: 18px; min-width: auto; }
-  #screenshotBtn { margin-left: 0 !important; margin-top: 10px; display: block; }
-  /* Make run button more prominent on mobile */
-  #runButton { min-height: 64px; border-radius: 14px; }
+      body { 
+        padding: 8px;
+        font-size: 16px;
+      }
+      
+      .info { 
+        font-size: 15px;
+        margin-bottom: 10px;
+        line-height: 1.5;
+      }
+      
+      /* Make control buttons full-width and larger for touch */
+      button { 
+        width: 100%;
+        font-size: 17px;
+        font-weight: 700;
+        padding: 18px 16px;
+        margin: 6px 0;
+        min-width: auto;
+        min-height: 58px;
+        border-radius: 10px;
+      }
+      
+      #screenshotBtn { 
+        margin-left: 0 !important;
+        margin-top: 6px;
+        display: block;
+        width: 100%;
+      }
+      
+      #runButton { 
+        min-height: 62px;
+        font-size: 18px;
+        margin-bottom: 8px;
+      }
+      
       /* Make console take the majority of the viewport height on phones */
       #console {
-        font-size: 16px;
-        min-height: 60vh;
-        max-height: 75vh;
-        line-height: 1.9;
-        padding: 16px;
-        border-radius: 12px;
+        font-size: 15px;
+        min-height: 55vh;
+        max-height: 70vh;
+        line-height: 1.7;
+        padding: 14px;
+        border-radius: 8px;
+        border-width: 2px;
       }
     }
 
+    /* Tablet adjustments */
     @media (min-width: 641px) and (max-width: 900px) {
-      #console { min-height: 360px; }
-      button { padding: 10px 16px; }
+      body { padding: 12px; }
+      .info { font-size: 16px; }
+      #console { 
+        min-height: 380px;
+        font-size: 15px;
+      }
+      button { 
+        padding: 14px 20px;
+        font-size: 17px;
+      }
+    }
+
+    /* Very small phones */
+    @media (max-width: 380px) {
+      body { padding: 6px; }
+      .info { font-size: 14px; }
+      button { 
+        font-size: 16px;
+        padding: 16px 12px;
+        min-height: 56px;
+      }
+      #console {
+        font-size: 14px;
+        padding: 12px;
+        min-height: 50vh;
+      }
     }
   </style>
 </head>
@@ -157,18 +220,16 @@
     const runButton = document.getElementById('runButton');
     const consoleEl = document.getElementById('console');
 
-    // Establish Socket.IO connection. If /socket.io/socket.io.js isn't available (e.g.,
-    // when using VS Code Live Preview), fall back to CDN and connect to the Node server
-    // at http://localhost:3000.
+    // Establish Socket.IO connection - always connect to same origin (works for localhost, tunnels, and Render)
     let socket;
     (function ensureIoAndConnect() {
       function connect() {
         try {
-          // If this page is served by the Node app (port 3000), connect same-origin.
-          // Otherwise, connect explicitly to localhost:3000 (dev default).
-          const sameOrigin = location.port === '3000';
-          socket = sameOrigin ? io() : io(window.SOCKET_ORIGIN || 'http://localhost:3000');
+          // Always connect to the same origin as the page (works for all deployment scenarios)
+          // This handles localhost, dev tunnels, and production deploys automatically
+          socket = io();
           attachSocketHandlers();
+          console.log('Socket.IO connected to:', window.location.origin);
         } catch (e) {
           console.error('Socket.IO connect failed', e);
         }
@@ -176,8 +237,7 @@
       if (typeof io !== 'undefined') {
         connect();
       } else {
-        // Load client from CDN and then connect to localhost:3000
-        window.SOCKET_ORIGIN = window.SOCKET_ORIGIN || 'http://localhost:3000';
+        // Load client from CDN if not available (fallback for Live Preview scenarios)
         const s = document.createElement('script');
         s.src = 'https://cdn.socket.io/4.7.2/socket.io.min.js';
         s.crossOrigin = 'anonymous';

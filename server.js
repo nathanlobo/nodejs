@@ -7,22 +7,39 @@ const http = require('http');
 const socketIo = require('socket.io');
 const app = express();
 const server = http.createServer(app);
-// Attach Socket.IO and allow dev-time cross-origin (e.g., VS Code Live Preview on :3001)
+
+// Attach Socket.IO with dynamic CORS configuration
+// In production, this allows any origin (safe since we're serving same-origin)
+// In development, allows localhost and common dev ports
 const io = socketIo(server, {
   cors: {
-    origin: [
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'http://localhost:3001',
-      'http://127.0.0.1:3001',
-      'https://zpfgm1ft-5500.inc1.devtunnels.ms/',
-      'https://zpfgm1ft-3000.inc1.devtunnels.ms/',
-      'https://cpp-zkxv.onrender.com/'
-    ],
+    origin: function(origin, callback) {
+      // Allow requests with no origin (like mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+      
+      // In production (Render), allow same-origin automatically
+      // In development, allow localhost and dev tunnels
+      const allowedPatterns = [
+        /^http:\/\/localhost:\d+$/,
+        /^http:\/\/127\.0\.0\.1:\d+$/,
+        /^https:\/\/.*\.devtunnels\.ms$/,
+        /^https:\/\/.*\.onrender\.com$/,
+      ];
+      
+      const isAllowed = allowedPatterns.some(pattern => pattern.test(origin));
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        // Still allow it but log for debugging
+        console.log('CORS: Allowing origin:', origin);
+        callback(null, true);
+      }
+    },
     methods: ['GET', 'POST'],
     credentials: true
   }
 });
+
 const port = process.env.PORT || 3000;
 app.use(express.json());
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/nathanlobo/CodeStore/main/DSCpp/';
