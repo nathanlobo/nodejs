@@ -7,7 +7,21 @@ const http = require('http');
 const socketIo = require('socket.io');
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server); // Attach Socket.IO to it
+// Attach Socket.IO and allow dev-time cross-origin (e.g., VS Code Live Preview on :3001)
+const io = socketIo(server, {
+  cors: {
+    origin: [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3001',
+      'https://zpfgm1ft-5500.inc1.devtunnels.ms/',
+      'https://zpfgm1ft-3000.inc1.devtunnels.ms/'
+    ],
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
 const port = process.env.PORT || 3000;
 app.use(express.json());
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/nathanlobo/CodeStore/main/DSCpp/';
@@ -15,7 +29,8 @@ let idToRepoPath = {};
 try {
   const mapRaw = fs.readFileSync(path.join(__dirname, 'id-map.json'), 'utf8');
   idToRepoPath = JSON.parse(mapRaw);
-  console.log('Loaded id->repo mapping from id-map.json');
+  const keys = Object.keys(idToRepoPath || {});
+  console.log(`Loaded id->repo mapping from id-map.json (${keys.length} ids)`);
 } catch (e) {
   console.warn('Could not load id-map.json, falling back to local file names');
   idToRepoPath = {};
@@ -240,13 +255,19 @@ server.on('error', (err) => {
 server.listen(port, '0.0.0.0', () => {
   console.log(`Server listening on port ${port}`);
 });
-app.get('/:shortId', (req, res) => {
+// Short ID route: serve the UI shell for a single clean segment without dots
+app.get('/:shortId', (req, res, next) => {
   const id = String(req.params.shortId || '');
-  if (id.includes('.') || id.includes('/')) {
-    return res.status(404).send('Not found');
+  // Avoid intercepting Socket.IO, assets, or any dotted/segmented paths
+  if (!id || id.includes('.') || id === 'socket.io') return next();
+  const strict = /^(1|true|yes)$/i.test(String(process.env.STRICT_ID_ROUTING || ''));
+  const exists = !!(idToRepoPath && Object.prototype.hasOwnProperty.call(idToRepoPath, id));
+  if (!exists) {
+    console.warn(`Route /${id} requested but not found in id-map.json. STRICT_ID_ROUTING=${strict ? 'ON' : 'OFF'}`);
   }
-  if (!idToRepoPath || !Object.prototype.hasOwnProperty.call(idToRepoPath, id)) {
+  if (strict && !exists) {
     return res.status(404).type('text').send(`Not found: /${id} doesn't exist`);
   }
+  // Serve the app shell; the client will show a friendly not-found message if id is unknown
   res.sendFile(path.join(__dirname, 'index.html'));
 });

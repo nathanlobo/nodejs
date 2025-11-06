@@ -58,7 +58,7 @@
 
     /* Make the Run button visually distinct and prominent */
     #runButton {
-      background: #0bb07a; /* green accent for Run */
+      background: #161d80; /* green accent for Run */
       color: white;
       font-weight: 700;
       padding-left: 28px;
@@ -154,9 +154,38 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script>
-    const socket = io();
     const runButton = document.getElementById('runButton');
     const consoleEl = document.getElementById('console');
+
+    // Establish Socket.IO connection. If /socket.io/socket.io.js isn't available (e.g.,
+    // when using VS Code Live Preview), fall back to CDN and connect to the Node server
+    // at http://localhost:3000.
+    let socket;
+    (function ensureIoAndConnect() {
+      function connect() {
+        try {
+          // If this page is served by the Node app (port 3000), connect same-origin.
+          // Otherwise, connect explicitly to localhost:3000 (dev default).
+          const sameOrigin = location.port === '3000';
+          socket = sameOrigin ? io() : io(window.SOCKET_ORIGIN || 'http://localhost:3000');
+          attachSocketHandlers();
+        } catch (e) {
+          console.error('Socket.IO connect failed', e);
+        }
+      }
+      if (typeof io !== 'undefined') {
+        connect();
+      } else {
+        // Load client from CDN and then connect to localhost:3000
+        window.SOCKET_ORIGIN = window.SOCKET_ORIGIN || 'http://localhost:3000';
+        const s = document.createElement('script');
+        s.src = 'https://cdn.socket.io/4.7.2/socket.io.min.js';
+        s.crossOrigin = 'anonymous';
+        s.onload = connect;
+        s.onerror = () => console.error('Failed to load Socket.IO client');
+        document.head.appendChild(s);
+      }
+    })();
 
     let isRunning = false;
     // All text before lockIndex is read-only output. User types only after lockIndex.
@@ -232,6 +261,15 @@
       lockIndex = 0;
       consoleEl.focus();
 
+      // Guard: if socket isn't ready yet (e.g., CDN still loading), show a message.
+      if (!socket || typeof socket.emit !== 'function') {
+        appendToConsole('Connecting to server... Please try Run again in a moment.\n');
+        isRunning = false;
+        runButton.disabled = false;
+        runButton.textContent = '▶ Run C++ Code';
+        return;
+      }
+
       // Send the id (if present in the URL) so the server can pick the file.
       const id = getIdFromQuery();
       if (id) socket.emit('run-interactive', { id });
@@ -277,26 +315,30 @@
     });
     window.addEventListener('popstate', () => showMappingForId(getIdFromQuery()));
 
-    socket.on('output', (data) => {
-      appendToConsole(data);
-    });
+    // Attach socket event handlers after the socket connects/exists
+    function attachSocketHandlers() {
+      if (!socket || typeof socket.on !== 'function') return;
+      socket.on('output', (data) => {
+        appendToConsole(data);
+      });
 
-    socket.on('done', () => {
-      isRunning = false;
-      runButton.disabled = false;
-      runButton.textContent = '▶ Run C++ Code';
-      appendToConsole('\n');
-      // If this was an auto-run and the output indicates failure, show friendly message
-      if (autoRun) {
-        const txt = consoleEl.value || '';
-        const compileFail = txt.includes('Compilation failed');
-        const procError = txt.includes('Process error') || txt.includes('[Process was killed') || /\[Process exited with code (\d+)\]/.test(txt) && !/\[Process exited with code 0\]/.test(txt);
-        if (compileFail || procError) {
-          appendToConsole('\nAn error occured: Refresh or press Run C++ code.\n');
+      socket.on('done', () => {
+        isRunning = false;
+        runButton.disabled = false;
+        runButton.textContent = '▶ Run C++ Code';
+        appendToConsole('\n');
+        // If this was an auto-run and the output indicates failure, show friendly message
+        if (autoRun) {
+          const txt = consoleEl.value || '';
+          const compileFail = txt.includes('Compilation failed');
+          const procError = txt.includes('Process error') || txt.includes('[Process was killed') || /\[Process exited with code (\d+)\]/.test(txt) && !/\[Process exited with code 0\]/.test(txt);
+          if (compileFail || procError) {
+            appendToConsole('\nAn error occured: Refresh or press Run C++ code.\n');
+          }
+          autoRun = false;
         }
-        autoRun = false;
-      }
-    });
+      });
+    }
 
     // Analytics sending function (Google Apps Script endpoint)
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwgXbi_LPG8TjWaOjeT2cPUWeoBRJ3U0DSrJTy3ikAn0hdXJ7nSXedTx_mu3xbHQLLm/exec';
