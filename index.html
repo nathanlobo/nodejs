@@ -539,17 +539,28 @@ button:disabled {
 
     function attachSocketHandlers() {
       if (!socket || typeof socket.on !== 'function') return;
+      // Flag that compilation finished and we're waiting for program output
+      let compiledWaiting = false;
+
       socket.on('output', (data) => {
-        appendToConsole(data);
-        if (data.includes('Compilation successful')) {
-          setTimeout(() => {
-            setConsole('');
-            lockIndex = 0;
-          }, 800);
-          runButton.style.display = 'none';
-          screenshotBtn.style.display = 'inline-block';
-          stopButton.style.display = 'inline-block';
+        // If compilation has just finished and this is the first real output chunk,
+        // insert a separator before showing it. Avoid inserting for empty/whitespace chunks.
+        if (compiledWaiting) {
+          if (typeof data === 'string' && data.trim().length > 0) {
+            appendToConsole('\n--- Compilation finished. Program output follows ---\n');
+            compiledWaiting = false;
+            lockIndex = consoleEl.value.length;
+          }
         }
+        appendToConsole(data);
+      });
+
+      // Explicit compiled event (sent by server) — wait for first program output before inserting separator
+      socket.on('compiled', () => {
+        compiledWaiting = true;
+        runButton.style.display = 'none';
+        screenshotBtn.style.display = 'inline-block';
+        stopButton.style.display = 'inline-block';
       });
 
       socket.on('done', () => {

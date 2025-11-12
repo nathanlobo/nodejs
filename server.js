@@ -247,6 +247,8 @@ io.on('connection', (socket) => {
             return;
           }
           socket.emit('output', 'Compilation successful. Running...\n\n');
+          // Notify client that compilation finished (used to trigger UI changes)
+          try { socket.emit('compiled'); } catch (e) { /* ignore */ }
           let child;
           try {
             child = spawn(exeFile, [], { stdio: ['pipe', 'pipe', 'pipe'] });
