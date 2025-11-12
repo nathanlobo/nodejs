@@ -29,5 +29,7 @@
     "6":"expt6-queue.cpp",
     
     "7a":"expt7/expt7a-bubble_sort.cpp",
-    "7b":"expt7/expt7b-insertion_sort.cpp"
+    "7b":"expt7/expt7b-insertion_sort.cpp",
+
+    "8":"expt8-graph-to-matrix-n-list.cpp"
 }

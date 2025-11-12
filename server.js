@@ -42,6 +42,16 @@ const io = socketIo(server, {
 
 const port = process.env.PORT || 3000;
 app.use(express.json());
+// Serve static assets (index.html, style.css, etc.) for online/container environments
+app.use(express.static(__dirname));
+
+// Create temp directory for storing temporary cpp files and executables
+const TEMP_DIR = path.join(__dirname, 'temp');
+if (!fs.existsSync(TEMP_DIR)) {
+  fs.mkdirSync(TEMP_DIR, { recursive: true });
+  console.log('Created temp directory:', TEMP_DIR);
+}
+
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/nathanlobo/CodeStore/main/DSCpp/';
 let idToRepoPath = {};
 try {
@@ -52,6 +62,61 @@ try {
 } catch (e) {
   console.warn('Could not load id-map.json, falling back to local file names');
   idToRepoPath = {};
+}
+
+// Load preferred users data for code customization
+let prefedUsers = {};
+try {
+  const prefedRaw = fs.readFileSync(path.join(__dirname, 'prefedUser.json'), 'utf8');
+  const prefedData = JSON.parse(prefedRaw);
+  // Flatten the structure for easy lookup by roll_no
+  if (prefedData && prefedData['ecomp24-28']) {
+    prefedData['ecomp24-28'].forEach(user => {
+      if (user.roll_no) {
+        // Store with lowercase key for case-insensitive lookup
+        const rollKey = user.roll_no.trim().toLowerCase();
+        prefedUsers[rollKey] = user;
+      }
+    });
+  }
+  console.log(`Loaded ${Object.keys(prefedUsers).length} preferred users from prefedUser.json`);
+} catch (e) {
+  console.warn('Could not load prefedUser.json, code customization disabled');
+  prefedUsers = {};
+}
+
+// Function to customize C++ code based on user data
+function customizeCode(codeContent, rollNo) {
+  if (!rollNo || !prefedUsers[rollNo.toLowerCase()]) {
+    return codeContent; // No customization if user not found
+  }
+  
+  const user = prefedUsers[rollNo.toLowerCase()];
+  const { fname, lname, gender } = user;
+  
+  if (!fname || !lname || !gender) {
+    console.warn(`Incomplete user data for roll ${rollNo}`);
+    return codeContent;
+  }
+  
+  let customized = codeContent;
+  
+  // Replace Nathan with first name
+  customized = customized.replace(/Nathan/g, fname);
+  customized = customized.replace(/nathan/g, fname.toLowerCase());
+  
+  // Replace Lobo with last name
+  customized = customized.replace(/Lobo/g, lname);
+  customized = customized.replace(/lobo/g, lname.toLowerCase());
+  
+  // Replace Mr with Mrs if female
+  if (gender.toUpperCase() === 'F') {
+    customized = customized.replace(/\bMr\b/g, 'Mrs');
+    customized = customized.replace(/\bMr\./g, 'Mrs.');
+  }
+  
+  console.log(`Customized code for ${rollNo}: ${fname} ${lname} (${gender})`);
+  return customized;
 }
 app.get('/mapping', (req, res) => {
   const id = req.query && req.query.id ? String(req.query.id) : null;
@@ -83,8 +148,8 @@ app.get('/run', (req, res) => {
   const repoPath = idToRepoPath[id];
   const isWin = process.platform === 'win32';
   const unique = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
-  const tempCpp = path.join(__dirname, `temp_${unique}.cpp`);
-  const exeFile = path.join(__dirname, isWin ? `exe_${unique}.exe` : `exe_${unique}`);
+  const tempCpp = path.join(TEMP_DIR, `temp_${unique}.cpp`);
+  const exeFile = path.join(TEMP_DIR, isWin ? `exe_${unique}.exe` : `exe_${unique}`);
   const doCompile = (cppFilePath) => {
     const compileCmd = `g++ "${cppFilePath}" -o "${exeFile}"`;
     exec(compileCmd, { timeout: 20000 }, (compileErr, compileStdout, compileStderr) => {
@@ -142,17 +207,35 @@ app.get('/run', (req, res) => {
 });
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
+  
+  // Store reference to current running child process for this socket
+  let currentChild = null;
+  let currentExeFile = null;
   socket.on('run-interactive', (data) => {
     const runHandler = (data) => {
+      // Kill any existing process before starting a new one
+      if (currentChild && !currentChild.killed) {
+        try {
+          currentChild.kill('SIGKILL');
+          console.log('Killed previous process for socket:', socket.id);
+        } catch (e) {
+          console.error('Error killing previous process:', e.message);
+        }
+      }
+      
       const id = data && data.id ? String(data.id) : '1';
+      const rollNo = data && data.rollNo ? String(data.rollNo).trim() : null;
+      console.log(`Run request: id=${id}, rollNo=${rollNo}`);
+      
       let cppName = null;
       if (id === '1') cppName = 'overloading_1a.cpp';
       else if (id === '2') cppName = 'overloading_1b.cpp';
       const repoPath = idToRepoPath[id];
       const isWin = process.platform === 'win32';
       const unique = `${socket.id}_${Date.now()}`;
-      const tempCpp = path.join(__dirname, `temp_${unique}.cpp`);
-      const exeFile = path.join(__dirname, `exeCode_${socket.id}${isWin ? '.exe' : ''}`);
+      const tempCpp = path.join(TEMP_DIR, `temp_${unique}.cpp`);
+      const exeFile = path.join(TEMP_DIR, `exeCode_${socket.id}${isWin ? '.exe' : ''}`);
+      currentExeFile = exeFile;
       const startCompileAndRun = (cppFilePath) => {
         const compileCmd = `g++ "${cppFilePath}" -o "${exeFile}"`;
         socket.emit('output', 'Compiling...\n');
@@ -167,9 +250,11 @@ io.on('connection', (socket) => {
           let child;
           try {
             child = spawn(exeFile, [], { stdio: ['pipe', 'pipe', 'pipe'] });
+            currentChild = child; // Store reference for stop handler
           } catch (err) {
             socket.emit('output', `Failed to start process: ${err.message}\n`);
             socket.emit('done');
+            currentChild = null;
             fs.unlink(exeFile, () => {}); // Clean up
             if (repoPath) fs.unlink(cppFilePath, () => {});
             return;
@@ -212,18 +297,29 @@ io.on('connection', (socket) => {
           socket.on('disconnect', onDisconnect);
           child.on('close', (code, signal) => {
             isRunning = false;
+            currentChild = null;
             if (inactivityTimer) clearTimeout(inactivityTimer);
             socket.off('input', inputListener);
             socket.off('disconnect', onDisconnect);
             socket.emit('output', `\n[Process exited with code ${code}]\n`);
             socket.emit('done');
-            fs.unlink(exeFile, (err) => { // Clean up
-              if (err) {
-                console.error(`Failed to delete ${exeFile}:`, err.message);
-              } else {
-                console.log(`Cleaned up ${exeFile}`);
-              }
-            });
+            // Cleanup exe file with retry logic for Windows
+            const cleanupExe = () => {
+              fs.unlink(exeFile, (err) => {
+                if (err) {
+                  console.error(`Failed to delete ${exeFile}:`, err.message);
+                  // Retry once after a delay (Windows may need time to release file)
+                  setTimeout(() => {
+                    fs.unlink(exeFile, (retryErr) => {
+                      if (!retryErr) console.log(`Cleaned up ${exeFile} on retry`);
+                    });
+                  }, 1000);
+                } else {
+                  console.log(`Cleaned up ${exeFile}`);
+                }
+              });
+            };
+            cleanupExe();
             if (repoPath) fs.unlink(cppFilePath, () => {});
           });
           child.on('error', (err) => {
@@ -239,13 +335,32 @@ io.on('connection', (socket) => {
         });
       };
       if (repoPath) {
-        fetchFromGithubAndWrite(repoPath, tempCpp, (err) => {
-          if (err) {
-            socket.emit('output',`Failed to fetch source: ${err.message}\nRefresh or Report to Developer.\n`);
+        // Fetch from GitHub, customize, then write
+        const url = GITHUB_RAW_BASE + repoPath;
+        https.get(url, (res) => {
+          if (res.statusCode !== 200) {
+            socket.emit('output', `Failed to fetch source. \nCheck network & Refresh`);
             socket.emit('done');
             return;
           }
-          startCompileAndRun(tempCpp);
+          let codeContent = '';
+          res.on('data', (chunk) => { codeContent += chunk.toString(); });
+          res.on('end', () => {
+            // Customize code based on roll number
+            const customizedCode = customizeCode(codeContent, rollNo);
+            // Write customized code to temp file
+            fs.writeFile(tempCpp, customizedCode, 'utf8', (err) => {
+              if (err) {
+                socket.emit('output', `Failed to write code file: ${err.message}\n`);
+                socket.emit('done');
+                return;
+              }
+              startCompileAndRun(tempCpp);
+            });
+          });
+        }).on('error', (err) => {
+          socket.emit('output', `Failed to fetch source: ${err.message}\n`);
+          socket.emit('done');
         });
       } else {
         if (!cppName) {
@@ -254,13 +369,73 @@ io.on('connection', (socket) => {
           return;
         }
         const cppFile = path.join(__dirname, cppName);
-        startCompileAndRun(cppFile);
+        // For local files, also customize if needed
+        if (rollNo) {
+          fs.readFile(cppFile, 'utf8', (err, codeContent) => {
+            if (err) {
+              socket.emit('output', `Failed to read local file: ${err.message}\n`);
+              socket.emit('done');
+              return;
+            }
+            const customizedCode = customizeCode(codeContent, rollNo);
+            fs.writeFile(tempCpp, customizedCode, 'utf8', (writeErr) => {
+              if (writeErr) {
+                socket.emit('output', `Failed to write customized code: ${writeErr.message}\n`);
+                socket.emit('done');
+                return;
+              }
+              startCompileAndRun(tempCpp);
+            });
+          });
+        } else {
+          startCompileAndRun(cppFile);
+        }
       }
     };
     runHandler(data);
   });
+  
+  // Handle stop request from client
+  socket.on('stop', () => {
+    console.log('Stop requested for socket:', socket.id);
+    if (currentChild && !currentChild.killed) {
+      try {
+        currentChild.kill('SIGKILL'); // Force kill on Windows
+        console.log('Killed process for socket:', socket.id);
+        socket.emit('output', '\n[Execution stopped by user]\n');
+        socket.emit('done');
+        
+        // Clean up exe file after killing process
+        if (currentExeFile) {
+          setTimeout(() => {
+            fs.unlink(currentExeFile, (err) => {
+              if (!err) console.log(`Cleaned up ${currentExeFile} after stop`);
+            });
+          }, 500);
+        }
+      } catch (e) {
+        console.error('Error killing process:', e.message);
+        socket.emit('output', '\n[Failed to stop process]\n');
+        socket.emit('done');
+      }
+      currentChild = null;
+    } else {
+      socket.emit('output', '\n[No process running]\n');
+      socket.emit('done');
+    }
+  });
+  
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
+    // Clean up on disconnect
+    if (currentChild && !currentChild.killed) {
+      try {
+        currentChild.kill('SIGKILL');
+        console.log('Killed process on disconnect for socket:', socket.id);
+      } catch (e) {
+        console.error('Error killing process on disconnect:', e.message);
+      }
+    }
   });
 });
 server.on('error', (err) => {
@@ -273,6 +448,18 @@ server.on('error', (err) => {
 server.listen(port, '0.0.0.0', () => {
   console.log(`Server listening on port ${port}`);
 });
+
+// Route for id/rollNo pattern (e.g., /1a/25lec07)
+app.get('/:shortId/:rollNo', (req, res, next) => {
+  const id = String(req.params.shortId || '');
+  const rollNo = String(req.params.rollNo || '');
+  // Avoid intercepting Socket.IO or dotted paths
+  if (!id || id.includes('.') || id === 'socket.io' || !rollNo) return next();
+  console.log(`Route /${id}/${rollNo} requested`);
+  // Serve the app shell regardless of whether the id exists
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // Short ID route: serve the UI shell for a single clean segment without dots
 app.get('/:shortId', (req, res, next) => {
   const id = String(req.params.shortId || '');

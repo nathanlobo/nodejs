@@ -4,220 +4,346 @@
   <meta charset="UTF-8">
   <title>Interactive C++ Terminal</title>
   <style>
-    /* Base layout and responsive sizing */
     :root {
-      --bg: #1e1e1e;
-      --panel: #0c0c0c;
-      --text: #e8e8e8;
-      --muted: #a0a0a0;
-      --accent: #0e639c;
-      --button-padding: 10px 20px;
-      --radius: 8px;
-    }
-
+    --bg: #0d1117;
+    --panel: #0d1117;
+    --muted: #8b949e;
+    --border: #30363d;
+    --accent: #74b5ff;
+    --text: #c9d1d9;
+    --warning:yellow;
+  }
+  :root.light {
+    --bg: #ffffff;
+    --panel: #f6f8fa;
+    --muted: #57606a;
+    --border: #d0d7de;
+    --accent: #0969da;
+    --text: #24292f;
+    --warning:#ffcc00;
+  }
     * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
+  box-sizing: border-box;
+}
 
-    html,body{height:100%; margin: 0; padding: 0;}
-    body {
-      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-      padding: 12px;
-      background: var(--bg);
-      color: var(--text);
-      max-width: 1000px;
-      margin: 0 auto;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
 
-    /* Buttons (mobile-friendly) - enlarged */
-    button {
-      font-size: 18px;
-      font-weight: 600;
-      padding: 16px 28px;
-      background: var(--accent);
-      color: #ffffff;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      margin: 8px 6px 8px 0;
-      min-height: 54px;
-      min-width: 160px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-      transition: all 150ms ease;
-      touch-action: manipulation;
-      user-select: none;
-    }
-    button:hover { background: #1177bb; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
-    button:active { transform: translateY(0); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-    button:disabled { background: #444; color: #888; cursor: not-allowed; box-shadow: none; opacity: 0.6; }
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
+  padding: 12px;
+  background: #1e1e1e;
+  color: #e8e8e8;
+  max-width: 1000px;
+  margin: 0 auto;
+}
 
-    /* Specific visual tweak for the screenshot button which is injected dynamically */
-    #screenshotBtn {
-      font-size: 18px;
-      padding: 16px 24px;
-      min-width: 160px;
-      margin-left: 8px;
-      display: inline-block;
-      background: #1a7fbf;
-    }
-    #screenshotBtn:hover { background: #1a8fcf; }
+button {
+  font-size: 18px;
+  font-weight: 600;
+  padding: 16px 28px;
+  background: #0e639c;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  margin: 8px 6px 8px 0;
+  min-width: 160px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  transition: all 150ms;
+}
 
-    /* Make the Run button visually distinct and prominent */
-    #runButton {
-      background: #2563eb;
-      color: #ffffff;
-      font-weight: 700;
-      padding: 16px 32px;
-      box-shadow: 0 6px 24px rgba(37,99,235,0.3);
-    }
-    #runButton:hover { background: #1d4ed8; box-shadow: 0 8px 28px rgba(37,99,235,0.4); }
-    #runButton:disabled { background: #444; box-shadow: none; }
+button:hover {
+  background: #1177bb;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
 
-    /* Console textarea styles */
-    #console {
-      width: 100%;
-      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-      font-size: 15px;
-      background: var(--panel);
-      color: #f0f0f0;
-      border: 2px solid #333;
-      border-radius: 10px;
-      padding: 16px;
-      line-height: 1.6;
-      resize: vertical;
-      min-height: 400px;
-      max-height: 75vh;
-      height: auto;
-      white-space: pre-wrap;
-      overflow: auto;
-      word-break: break-word;
-      -webkit-overflow-scrolling: touch;
-    }
-    #console:focus {
-      outline: none;
-      border-color: #0e639c;
-      box-shadow: 0 0 0 3px rgba(14,99,156,0.15);
-    }
+button:disabled {
+  background: #444;
+  color: #888;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
 
-    .info {
-      color: var(--muted);
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 12px;
-      word-break: break-word;
-      line-height: 1.4;
-    }
+#screenshotBtn {
+  background: #1a7fbf;
+}
 
-    /* Not-found message styling if shown in-page */
-    .not-found {
-      display: block;
-      color: #ff6b6b;
-      font-size: 20px;
-      font-weight: 800;
-      text-align: center;
-      padding: 18px;
-      border: 1px solid rgba(255,107,107,0.15);
-      background: rgba(255,107,107,0.03);
-      border-radius: 8px;
-      margin: 12px 0;
-    }
+#screenshotBtn:hover {
+  background: #1a8fcf;
+}
 
-    /* Layout helpers */
-    .top-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+#runButton {
+  background: #2563eb;
+  font-weight: 700;
+}
 
-    /* Responsive adjustments for mobile phones */
-    @media (max-width: 640px) {
-      body { 
-        padding: 8px;
-        font-size: 16px;
-      }
-      
-      .info { 
-        font-size: 15px;
-        margin-bottom: 10px;
-        line-height: 1.5;
-      }
-      
-      /* Make control buttons full-width and larger for touch */
-      button { 
-        width: 100%;
-        font-size: 17px;
-        font-weight: 700;
-        padding: 18px 16px;
-        margin: 6px 0;
-        min-width: auto;
-        min-height: 58px;
-        border-radius: 10px;
-      }
-      
-      #screenshotBtn { 
-        margin-left: 0 !important;
-        margin-top: 6px;
-        display: block;
-        width: 100%;
-      }
-      
-      #runButton { 
-        min-height: 62px;
-        font-size: 18px;
-        margin-bottom: 8px;
-      }
-      
-      /* Make console take the majority of the viewport height on phones */
-      #console {
-        font-size: 15px;
-        min-height: 55vh;
-        max-height: 70vh;
-        line-height: 1.7;
-        padding: 14px;
-        border-radius: 8px;
-        border-width: 2px;
-      }
-    }
+#runButton:hover {
+  background: #1d4ed8;
+}
 
-    /* Tablet adjustments */
-    @media (min-width: 641px) and (max-width: 900px) {
-      body { padding: 12px; }
-      .info { font-size: 16px; }
-      #console { 
-        min-height: 380px;
-        font-size: 15px;
-      }
-      button { 
-        padding: 14px 20px;
-        font-size: 17px;
-      }
-    }
+#runButton:disabled {
+  background: #444;
+}
 
-    /* Very small phones */
-    @media (max-width: 380px) {
-      body { padding: 6px; }
-      .info { font-size: 14px; }
-      button { 
-        font-size: 16px;
-        padding: 16px 12px;
-        min-height: 56px;
-      }
-      #console {
-        font-size: 14px;
-        padding: 12px;
-        min-height: 50vh;
-      }
+#stopButton {
+  background: #dc2626;
+  font-weight: 700;
+}
+
+#stopButton:hover {
+  background: #b91c1c;
+}
+
+/* CSS for Pop up to ask for name */
+  .modal {
+    display: block; /* Hidden by default */
+    position: fixed; /* Stay in place, even on scroll */
+    z-index: 1000; /* Sit on top of everything */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Black with 50% opacity */
+  }
+
+  /* The modal's content box */
+  .modal-content {
+    background-color: var(--bg);
+    /* Center the modal */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    
+    /* More comfortable padding and box sizing */
+    padding: 16px 18px;
+    border: 1px solid var(--text);
+    width: 88%;
+    max-width: 450px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    text-align: center;
+  }
+  .modal-content p {
+    line-height: 1.2;
+    font-size: 17px;
+    margin: 0 0 8px 0;
+  }
+  .modal-content i {
+    font-size: 15px;
+    color: var(--warning);
+    display: block;
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+  }
+  /* Form layout inside modal: center inputs and make them responsive */
+  #nameForm {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .btnGrp {
+    display: flex;
+    justify-content: flex-end; /* align buttons to the right */
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 6px;
+  }
+
+  /* Style the form elements */
+  #nameForm input[type="text"] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-size: 16px;
+  }
+
+  #nameForm button, input[type="button"] {
+    margin-bottom: 5px;
+    background-color: var(--accent);
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+  }
+
+  #nameForm button:hover,input[type="button"]:hover {
+    background-color: #0056b3;
+  }
+  
+  @media (max-width: 620px){
+    #nameForm button:hover,input[type="button"]:hover {
+      background-color: #0056b3;
     }
+  }
+  /********* Pop up CSS Ends Here *********/
+
+#console {
+  width: 100%;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 15px;
+  background: #0c0c0c;
+  color: #f0f0f0;
+  border: 2px solid #333;
+  border-radius: 10px;
+  padding: 16px;
+  resize: vertical;
+  min-height: 400px;
+  white-space: pre-wrap;
+}
+
+#console:focus {
+  outline: none;
+  border-color: #0e639c;
+}
+
+.info {
+  color: #a0a0a0;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.not-found {
+  color: #ff6b6b;
+  font-size: 20px;
+  font-weight: 800;
+  text-align: center;
+  padding: 18px;
+  border: 1px solid rgba(255,107,107,0.15);
+  background: rgba(255,107,107,0.03);
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+.top-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Mobile adjustments */
+@media (max-width:640px){
+  body{
+    padding:8px
+  }
+  .top-row{
+    flex-direction:column;
+    align-items:stretch}
+  button{
+    font-size:16px;
+    padding:12px 16px;
+    min-width:unset;
+    width:100%;
+    margin:6px 0}
+  #console{
+    height:60vh;
+    min-height:500px;
+    padding:10px;
+    font-size:30px}
+  .info{
+    font-size:14px
+  }
+}
   </style>
 </head>
 <body>
   <div id="selectedInfo" class="info"><span id="selectedId">-</span> - <span id="selectedPath">(unknown)</span></div>
-  <button id="runButton">▶ Run C++ Code</button>
+  <div class="top-row">
+    <button id="runButton">▶ Run C++ Code</button>
+    <button id="stopButton" style="display:none;">■ Stop</button>
+    <button id="screenshotBtn" style="display:none;">📸 Screenshot</button>
+  </div>
+  <div id="analyticsModal" class="modal">
+    <div class="modal-content">
+      <p id="modal-text">Need your Name or Roll No. to be displayed in the code</p>
+      <i id="modal-warning">Note: The above mention feature is in development & not yet published</i>
+      <form id="nameForm">
+        <input type="text" id="userName" name="userName" placeholder="Enter your Name or Roll No" required>
+        <div class="btnGrp">
+          <input type="button" id="skip" value="Skip">
+          <button type="submit">Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
   <textarea id="console" rows="20" spellcheck="false">Click "Run C++ Code" to start...</textarea>
-
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script>
+    skipBtn = document.getElementById("skip");
+    skipCount = 0;
+    skipBtn.addEventListener("click", function() {
+      if (skipCount==0){
+        const modalText = document.getElementById("modal-text");
+        const modalWarn = document.getElementById("modal-warning");
+        modalText.textContent = "I've Asked Just for your name, Not your Bank Account details.";
+        modalWarn.textContent = "";
+        skipCount += 1;
+      }
+      else if (skipCount==1){
+        const modalText = document.getElementById("modal-text");
+        modalText.textContent = "Are you sure? You won't get any future features";
+        skipCount++;
+      }
+      else if (skipCount==2){
+        const modal = document.getElementById("analyticsModal");
+        modal.style.display = "none";
+      }
+    });
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwgXbi_LPG8TjWaOjeT2cPUWeoBRJ3U0DSrJTy3ikAn0hdXJ7nSXedTx_mu3xbHQLLm/exec';
+    window.onload = function() {
+      const storedName = localStorage.getItem('userName');
+      const currentTab = localStorage.getItem('selectedTab') || 'HTML';
+      
+      if (storedName) {
+        console.log("Welcome back, " + storedName + "! Logging your visit.");
+        const visitType = 'Return Visit';
+        // Send immediately for returning visitors
+        sendAnalyticsData(storedName, visitType, currentTab);
+      } else {
+        console.log("First visit. Showing modal.");
+        const modal = document.getElementById("analyticsModal");
+        const form = document.getElementById("nameForm");
+        modal.style.display = "none"; ////////// Change to "block" to enable popup ////////////
+        document.getElementById("userName").focus();
+        form.addEventListener("submit", function(event) {
+          event.preventDefault();
+          const userName = document.getElementById("userName").value.trim();
+          if (userName) {
+            localStorage.setItem('userName', userName);
+            modal.style.display = "none";
+            // Send right after the user submits their name on first visit
+            sendAnalyticsData(userName, 'First Visit', localStorage.getItem('selectedTab') || 'HTML');
+          }
+        });
+      }
+    };
+
+    function sendAnalyticsData(name, visitType, visitPage) {
+        const url = `${GOOGLE_SCRIPT_URL}?userName=${encodeURIComponent(name)}&visitType=${encodeURIComponent(visitType)}&visitPage=${encodeURIComponent(visitPage)}`;
+        fetch(url, { method: 'POST', mode: 'no-cors' })
+        .then(() => { console.log(`Analytics data sent: ${name} - ${visitType}`); })
+        .catch(error => { console.error('Error sending analytics data:', error); });
+    }
     const runButton = document.getElementById('runButton');
+    const stopButton = document.getElementById('stopButton');
     const consoleEl = document.getElementById('console');
 
     // Establish Socket.IO connection - always connect to same origin (works for localhost, tunnels, and Render)
@@ -286,24 +412,44 @@
       moveCaretToEnd();
     }
 
-    // Helper to get `id` from URL query string (e.g. ?id=2)
     function getIdFromQuery() {
       try {
-        // Prefer explicit ?id=... query param
         const params = new URLSearchParams(window.location.search);
         const idParam = params.get('id');
         if (idParam) return idParam;
-        // Support shorthand query like `/?1a` (no `id=` key): use first key if present
+        
+        // Check for other query params, but ignore 'rollNo'
         for (const key of params.keys()) {
-          if (key) return key;
+          if (key && key !== 'rollNo') return key;
         }
-        // If no query param, support path-style URL like /1a by reading pathname
+        
+        // Check path for ID (first segment only)
         const path = window.location.pathname || '/';
         if (path && path.length > 1) {
-          // strip leading slash and any trailing slashes
-          const trimmed = path.replace(/^\/+|\/+$/g, '');
-          // only accept short single-segment ids (no slashes left)
-          if (!trimmed.includes('/')) return trimmed;
+          const segments = path.replace(/^\/+|\/+$/g, '').split('/');
+          if (segments.length >= 1 && segments[0]) {
+            return segments[0]; // Return first segment as ID
+          }
+        }
+        return null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function getRollNoFromQuery() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const rollNoParam = params.get('rollNo');
+        if (rollNoParam) return rollNoParam.toLowerCase();
+        
+        // Check path for pattern like /1a/25lec07
+        const path = window.location.pathname || '/';
+        if (path && path.length > 1) {
+          const segments = path.replace(/^\/+|\/+$/g, '').split('/');
+          if (segments.length === 2) {
+            return segments[1].toLowerCase();
+          }
         }
         return null;
       } catch (e) {
@@ -313,15 +459,12 @@
 
     runButton.addEventListener('click', () => {
       if (isRunning) return;
-
       isRunning = true;
       runButton.disabled = true;
       runButton.textContent = '⏳ Running...';
-      setConsole('');
+      setConsole('Setting up code.\n');
       lockIndex = 0;
       consoleEl.focus();
-
-      // Guard: if socket isn't ready yet (e.g., CDN still loading), show a message.
       if (!socket || typeof socket.emit !== 'function') {
         appendToConsole('Connecting to server... Please try Run again in a moment.\n');
         isRunning = false;
@@ -329,14 +472,38 @@
         runButton.textContent = '▶ Run C++ Code';
         return;
       }
-
-      // Send the id (if present in the URL) so the server can pick the file.
       const id = getIdFromQuery();
-      if (id) socket.emit('run-interactive', { id });
-      else socket.emit('run-interactive');
+      const rollNo = getRollNoFromQuery();
+      const payload = { id: id || undefined, rollNo: rollNo || undefined };
+      socket.emit('run-interactive', payload);
+      
+      // Track analytics for Run button (fallback to rollNo or Anonymous)
+      const storedName = localStorage.getItem('userName');
+      const rollNoForAnalytics = getRollNoFromQuery();
+      const nameForAnalytics = storedName || (rollNoForAnalytics ? rollNoForAnalytics.toUpperCase() : 'Anonymous');
+      sendAnalyticsData(nameForAnalytics, 'Run', window.location.href);
     });
 
-    // Display mapping info in the UI
+    stopButton.addEventListener('click', () => {
+      if (confirm('Are you sure you want to stop the execution?')) {
+        if (socket && typeof socket.emit === 'function') {
+          socket.emit('stop');
+        }
+        isRunning = false;
+        runButton.disabled = false;
+        runButton.textContent = '▶ Run C++ Code';
+        stopButton.style.display = 'none';
+        // Keep screenshot button visible after stopping
+        runButton.style.display = 'inline-block';
+        appendToConsole('\n[Execution stopped by user]\n');
+        
+        // Track analytics for Stop button (fallback to rollNo or Anonymous)
+        const storedName = localStorage.getItem('userName');
+        const rollNoForAnalytics = getRollNoFromQuery();
+        const nameForAnalytics = storedName || (rollNoForAnalytics ? rollNoForAnalytics.toUpperCase() : 'Anonymous');
+        sendAnalyticsData(nameForAnalytics, 'Stop', window.location.href);
+    }});
+
     const selectedIdEl = document.getElementById('selectedId');
     const selectedPathEl = document.getElementById('selectedPath');
     function showMappingForId(id) {
@@ -351,7 +518,6 @@
         .then(j => {
           if (j && j.path) {
             selectedPathEl.textContent = j.path;
-            // store filePath for analytics
             localStorage.setItem('filePath', j.path);
           } else {
             selectedPathEl.textContent = '(local filename)';
@@ -361,33 +527,39 @@
         .catch(() => { selectedPathEl.textContent = '(error)'; return null; });
     }
 
-    // Show mapping at load and whenever the URL changes (back/forward)
     const initialId = getIdFromQuery();
-    // Auto-start run flag
     let autoRun = false;
-    // showMappingForId returns a promise; when mapping is available, auto-run
     showMappingForId(initialId).then((j) => {
       if (j && j.path && initialId) {
-        // small delay to allow socket to connect
         autoRun = true;
         setTimeout(() => runButton.click(), 250);
       }
     });
     window.addEventListener('popstate', () => showMappingForId(getIdFromQuery()));
 
-    // Attach socket event handlers after the socket connects/exists
     function attachSocketHandlers() {
       if (!socket || typeof socket.on !== 'function') return;
       socket.on('output', (data) => {
         appendToConsole(data);
+        if (data.includes('Compilation successful')) {
+          setTimeout(() => {
+            setConsole('');
+            lockIndex = 0;
+          }, 800);
+          runButton.style.display = 'none';
+          screenshotBtn.style.display = 'inline-block';
+          stopButton.style.display = 'inline-block';
+        }
       });
 
       socket.on('done', () => {
         isRunning = false;
         runButton.disabled = false;
         runButton.textContent = '▶ Run C++ Code';
+        stopButton.style.display = 'none';
+        // Keep screenshot button visible after code execution
+        runButton.style.display = 'inline-block';
         appendToConsole('\n');
-        // If this was an auto-run and the output indicates failure, show friendly message
         if (autoRun) {
           const txt = consoleEl.value || '';
           const compileFail = txt.includes('Compilation failed');
@@ -400,30 +572,12 @@
       });
     }
 
-    // Analytics sending function (Google Apps Script endpoint)
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwgXbi_LPG8TjWaOjeT2cPUWeoBRJ3U0DSrJTy3ikAn0hdXJ7nSXedTx_mu3xbHQLLm/exec';
-    function sendAnalyticsData(name, visitType, visitPage) {
-      try {
-        const url = `${GOOGLE_SCRIPT_URL}?userName=${encodeURIComponent(name)}&visitType=${encodeURIComponent(visitType)}&visitPage=${encodeURIComponent(visitPage)}`;
-        fetch(url, { method: 'POST', mode: 'no-cors' }).catch(() => {});
-      } catch (e) { /* ignore */ }
-    }
-
-    // Screenshot button: capture the console textarea and download PNG
     (function setupScreenshot(){
-      const screenshotBtn = document.createElement('button');
-      screenshotBtn.id = 'screenshotBtn';
-      screenshotBtn.textContent = '📸 Screenshot';
-      screenshotBtn.style.marginLeft = '8px';
-      runButton.insertAdjacentElement('afterend', screenshotBtn);
-
+      const screenshotBtn = document.getElementById('screenshotBtn');
       screenshotBtn.addEventListener('click', async () => {
         try {
           screenshotBtn.textContent = '⏳ Generating...';
           screenshotBtn.disabled = true;
-
-          // Create a temporary div that mirrors the textarea rendering so
-          // html2canvas captures wrapped lines and full content correctly.
           const text = consoleEl.value || '';
           const cs = window.getComputedStyle(consoleEl);
           const temp = document.createElement('div');
@@ -436,18 +590,14 @@
           temp.style.padding = cs.padding;
           temp.style.borderRadius = cs.borderRadius || '6px';
           temp.style.boxSizing = 'border-box';
-          // Match the width of the visible textarea so wrapping behaves the same
           temp.style.width = (consoleEl.clientWidth) + 'px';
           temp.style.maxWidth = temp.style.width;
-          // Place offscreen but in the DOM so html2canvas can render it
           temp.style.position = 'fixed';
           temp.style.left = '-99999px';
           temp.style.top = '0';
           temp.textContent = text;
           document.body.appendChild(temp);
-
           const canvas = await html2canvas(temp, { backgroundColor: null, useCORS: true, scale: 2 });
-          // remove the temporary element
           temp.remove();
 
           canvas.toBlob((blob) => {
@@ -463,10 +613,11 @@
             setTimeout(() => { screenshotBtn.textContent = '📸 Screenshot'; screenshotBtn.disabled = false; }, 2000);
           });
 
-          // Analytics for screenshot
+          // Track analytics for Screenshot (fallback to rollNo or Anonymous)
           const storedName = localStorage.getItem('userName');
-          const filePath = localStorage.getItem('filePath');
-          if (storedName && filePath) sendAnalyticsData(storedName, 'Screenshot Downloaded', filePath);
+          const rollNoForAnalytics = getRollNoFromQuery();
+          const nameForAnalytics = storedName || (rollNoForAnalytics ? rollNoForAnalytics.toUpperCase() : 'Anonymous');
+          sendAnalyticsData(nameForAnalytics, 'Screenshot', window.location.href);
         } catch (e) {
           console.error('Screenshot failed', e);
           screenshotBtn.textContent = '❌ Failed';
@@ -475,52 +626,37 @@
       });
     })();
 
-    // Key handling to emulate terminal behavior within a single textarea
     consoleEl.addEventListener('keydown', (e) => {
       if (!isRunning) return;
-
       const start = consoleEl.selectionStart;
       const end = consoleEl.selectionEnd;
-
-      // Prevent moving caret into the read-only region with Home/PageUp
       if (e.key === 'Home' || e.key === 'PageUp') {
         e.preventDefault();
         consoleEl.selectionStart = consoleEl.selectionEnd = lockIndex;
         return;
       }
-
-      // Keep caret from going before lockIndex with ArrowLeft/Up
       if ((e.key === 'ArrowLeft' || e.key === 'ArrowUp') && start <= lockIndex) {
         e.preventDefault();
         consoleEl.selectionStart = consoleEl.selectionEnd = lockIndex;
         return;
       }
-
-      // Block Backspace if at the boundary or selection starts in read-only area
       if (e.key === 'Backspace' && (start <= lockIndex)) {
         e.preventDefault();
         return;
       }
-
-      // Block Delete if it would delete from read-only area
       if (e.key === 'Delete' && start < lockIndex) {
         e.preventDefault();
         return;
       }
-
-      // Submit on Enter: send only the editable tail
       if (e.key === 'Enter') {
         e.preventDefault();
         const input = getUserInput();
-        // Don't duplicate what the user already typed; just finalize the line
         socket.emit('input', input);
         appendToConsole('\n');
-        // After sending, move lock to the new end so next input starts fresh
         lockIndex = consoleEl.value.length;
       }
     });
 
-    // Ensure pastes only affect the editable area
     consoleEl.addEventListener('paste', (e) => {
       if (!isRunning) return;
       const start = consoleEl.selectionStart;
@@ -531,7 +667,6 @@
       }
     });
 
-    // Keep caret in editable region when clicking
     consoleEl.addEventListener('click', () => {
       if (!isRunning) return;
       if (consoleEl.selectionStart < lockIndex) {
