@@ -100,7 +100,7 @@ button:disabled {
 
 /* CSS for Pop up to ask for name */
   .modal {
-    display: block; /* Hidden by default */
+    display: none; /* Hidden by default */
     position: fixed; /* Stay in place, even on scroll */
     z-index: 1000; /* Sit on top of everything */
     left: 0;
@@ -506,7 +506,16 @@ button:disabled {
 
     const selectedIdEl = document.getElementById('selectedId');
     const selectedPathEl = document.getElementById('selectedPath');
-    function showMappingForId(id) {
+    // Will hold parsed data.json contents (dscppExpts)
+    let dscppData = null;
+    // Current file description for the selected id (used for title and screenshot filename)
+    let currentFileDesc = null;
+
+    // Load data.json once so we can map file paths to descriptions
+    (function loadDataJson(){
+      fetch('/data.json').then(r => r.json()).then(j => { dscppData = j && j.dscppExpts ? j.dscppExpts : null; }).catch(() => { dscppData = null; });
+    })();
+  function showMappingForId(id) {
       if (!id) {
         selectedIdEl.textContent = '-';
         selectedPathEl.textContent = '(unknown)';
@@ -517,14 +526,48 @@ button:disabled {
         .then(r => r.json())
         .then(j => {
           if (j && j.path) {
-            selectedPathEl.textContent = j.path;
+            // Attempt to find a human-friendly file description from data.json
+            let desc = null;
+            try {
+              if (dscppData && Array.isArray(dscppData)) {
+                // Normalize mapping path for comparison
+                const mapPath = j.path.replace(/^\/+/, ''); // e.g. "expt1/overloading_1a.cpp"
+                for (const group of dscppData) {
+                  if (!group || !Array.isArray(group.files)) continue;
+                  for (let i = 0; i < group.files.length; i++) {
+                    const f = group.files[i] || '';
+                    // match by ending-with the mapped path (handles leading folder differences)
+                    if (f.replace(/^\/+/, '').endsWith(mapPath)) {
+                      if (Array.isArray(group.filedesc) && group.filedesc[i]) {
+                        desc = group.filedesc[i];
+                      }
+                      break;
+                    }
+                  }
+                  if (desc) break;
+                }
+              }
+            } catch (e) { desc = null; }
+
+            if (desc) {
+              selectedPathEl.textContent = desc;
+              currentFileDesc = desc;
+              // Update document title to the file description
+              try { document.title = desc; } catch (e) {}
+            } else {
+              // Fallback to showing the raw path
+              selectedPathEl.textContent = j.path;
+              currentFileDesc = null;
+            }
+
             localStorage.setItem('filePath', j.path);
           } else {
             selectedPathEl.textContent = '(local filename)';
+            currentFileDesc = null;
           }
           return j;
         })
-        .catch(() => { selectedPathEl.textContent = '(error)'; return null; });
+        .catch(() => { selectedPathEl.textContent = '(error)'; currentFileDesc = null; return null; });
     }
 
     const initialId = getIdFromQuery();
@@ -544,12 +587,15 @@ button:disabled {
 
       socket.on('output', (data) => {
         // If compilation has just finished and this is the first real output chunk,
-        // insert a separator before showing it. Avoid inserting for empty/whitespace chunks.
+        // clear the console so the program output appears directly (no separator).
         if (compiledWaiting) {
           if (typeof data === 'string' && data.trim().length > 0) {
-            appendToConsole('\n--- Compilation finished. Program output follows ---\n');
+            // Clear previous console content (user requested behavior) and
+            // allow program output to start immediately without any header.
+            setConsole('');
             compiledWaiting = false;
             lockIndex = consoleEl.value.length;
+            moveCaretToEnd();
           }
         }
         appendToConsole(data);
@@ -615,7 +661,16 @@ button:disabled {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'console-screenshot.png';
+            // Use the file description (if available) as the filename, sanitized
+            const fnameBase = currentFileDesc || 'console-screenshot';
+            const sanitize = (s) => {
+              return String(s || '')
+                .replace(/[^a-z0-9 _\-\.]/gi, '') // remove unsafe chars
+                .trim()
+                .replace(/\s+/g, '-') // whitespace to dashes
+                .substring(0, 120);
+            };
+            a.download = sanitize(fnameBase) + '.png';
             document.body.appendChild(a);
             a.click();
             a.remove();
