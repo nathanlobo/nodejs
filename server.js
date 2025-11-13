@@ -108,6 +108,10 @@ function customizeCode(codeContent, rollNo) {
   // Replace Lobo with last name
   customized = customized.replace(/Lobo/g, lname);
   customized = customized.replace(/lobo/g, lname.toLowerCase());
+
+  // Replace Lobo with last name
+  customized = customized.replace(/25LEC07/g, lname);
+  customized = customized.replace(/25lec07/g, rollNo.toLowerCase());
   
   // Replace Mr with Mrs if female
   if (gender.toUpperCase() === 'F') {
