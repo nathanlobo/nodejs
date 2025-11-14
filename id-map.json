@@ -31,5 +31,12 @@
     "7a":"expt7/expt7a-bubble_sort.cpp",
     "7b":"expt7/expt7b-insertion_sort.cpp",
 
-    "8":"expt8-graph-to-matrix-n-list.cpp"
+    "8":"expt8-graph-to-matrix-n-list.cpp",
+
+    "9a":"expt9/expt9a-dfs.cpp",
+    "9b":"expt9/expt9b-bfs.cpp",
+
+    "10a":"expt10/expt10a-prims.cpp",
+    "10b":"expt10/expt10b-kruskal.cpp",
+    "10c":"expt10/expt10c-dijkstra.cpp"
 }

@@ -149,6 +149,38 @@
       "outputLinks": [
         "https://cpp-zkxv.onrender.com/8"
       ]
+    },
+    {
+      "name": "Expt 9 - Implementation of Graph Traversal Techniques (BFS and DFS)",
+      "files": [
+        "DSCpp/expt9/expt9a-dfs.cpp",
+        "DSCpp/expt9/expt9b-bfs.cpp"
+      ],
+      "filedesc": [
+        "Implementation of Depth First Search (DFS)",
+        "Implementation of Breadth First Search (BFS)"
+      ],
+      "outputLinks": [
+        "https://cpp-zkxv.onrender.com/9a",
+        "https://cpp-zkxv.onrender.com/9b"
+      ]
+    },
+    {
+      "name": "Expt 10 - Implementation of",
+      "files": [
+        "DSCpp/expt10/expt10a-prims.cpp",
+        "DSCpp/expt10/expt10b-kruskal.cpp",
+        "DSCpp/expt10/expt10c-dijkstra.cpp"
+      ],
+      "filedesc": [ "Implementation of Prim's Algorithm",
+                    "Implementation of Kruskal's Algorithm", 
+                    "Implementation of Dijkstra's Algorithm"
+      ],
+      "outputLinks": [
+        "https://cpp-zkxv.onrender.com/10a",
+        "https://cpp-zkxv.onrender.com/10b",
+        "https://cpp-zkxv.onrender.com/10c"
+      ]
     }
   ]
 }
