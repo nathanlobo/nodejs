@@ -513,7 +513,7 @@ button:disabled {
 
     // Load data.json once so we can map file paths to descriptions
     (function loadDataJson(){
-      fetch('/data.json').then(r => r.json()).then(j => { dscppData = j && j.dscppExpts ? j.dscppExpts : null; }).catch(() => { dscppData = null; });
+      fetch('https://raw.githubusercontent.com/nathanlobo/nathanlobo.github.io/main/docs/data.json').then(r => r.json()).then(j => { dscppData = j && j.dscppExpts ? j.dscppExpts : null; }).catch(() => { dscppData = null; });
     })();
   function showMappingForId(id) {
       if (!id) {

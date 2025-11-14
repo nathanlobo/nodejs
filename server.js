@@ -64,26 +64,45 @@ try {
   idToRepoPath = {};
 }
 
-// Load preferred users data for code customization
+// Load preferred users data for code customization (remote fallback)
 let prefedUsers = {};
-try {
-  const prefedRaw = fs.readFileSync(path.join(__dirname, 'prefedUser.json'), 'utf8');
-  const prefedData = JSON.parse(prefedRaw);
-  // Flatten the structure for easy lookup by roll_no
-  if (prefedData && prefedData['ecomp24-28']) {
-    prefedData['ecomp24-28'].forEach(user => {
-      if (user.roll_no) {
-        // Store with lowercase key for case-insensitive lookup
-        const rollKey = user.roll_no.trim().toLowerCase();
-        prefedUsers[rollKey] = user;
+const PREFED_USERS_URL = 'https://raw.githubusercontent.com/nathanlobo/nathanlobo.github.io/main/docs/prefedUser.json';
+
+(function loadPrefedUsersFromRemote() {
+  https.get(PREFED_USERS_URL, (res) => {
+    if (res.statusCode !== 200) {
+      let errData = '';
+      res.on('data', (d) => { errData += d.toString(); });
+      res.on('end', () => {
+        console.warn(`Could not fetch prefed users (${res.statusCode}). Falling back to no customization.`);
+      });
+      return;
+    }
+    let raw = '';
+    res.on('data', (chunk) => { raw += chunk.toString(); });
+    res.on('end', () => {
+      try {
+        const prefedData = JSON.parse(raw);
+        // Flatten the structure for easy lookup by roll_no
+        if (prefedData && prefedData['ecomp24-28']) {
+          prefedData['ecomp24-28'].forEach(user => {
+            if (user.roll_no) {
+              const rollKey = user.roll_no.trim().toLowerCase();
+              prefedUsers[rollKey] = user;
+            }
+          });
+        }
+        console.log(`Loaded ${Object.keys(prefedUsers).length} prefed users from ${PREFED_USERS_URL}`);
+      } catch (e) {
+        console.warn('Failed to parse prefedUser.json from remote:', e.message);
+        prefedUsers = {};
       }
     });
-  }
-  console.log(`Loaded ${Object.keys(prefedUsers).length} preferred users from prefedUser.json`);
-} catch (e) {
-  console.warn('Could not load prefedUser.json, code customization disabled');
-  prefedUsers = {};
-}
+  }).on('error', (e) => {
+    console.warn('Could not fetch prefedUser.json:', e.message);
+    prefedUsers = {};
+  });
+})();
 
 // Function to customize C++ code based on user data
 function customizeCode(codeContent, rollNo) {
